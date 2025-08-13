@@ -105,6 +105,57 @@ class UCSNode:
 
       return {'found': False}
   
+  # ===== BFS Implementation ===== (To Compare)
+class BFSNode:
+    def __init__(self, state, parent=None, action=None):
+        self.state = state
+        self.parent = parent
+        self.action = action
+  
+def breadth_first_search(initial_state, max_log=10):
+    start_time = time.perf_counter()
+    start = BFSNode(initial_state)
+    frontier = deque([start])
+    reached = {initial_state}
+    nodes_expanded = 0
+    max_frontier = 1
+    expansion_log = []
+
+    while frontier:
+        node = frontier.popleft()
+        nodes_expanded += 1
+        if len(expansion_log) < max_log:
+            expansion_log.append(('BFS_expand', node.state))
+
+        for act in actions(node.state):
+            child_state = result(node.state, act)
+            if child_state not in reached:
+                child = BFSNode(child_state, node, act)
+                if is_goal(child_state):
+                    runtime = time.perf_counter() - start_time
+                    path = reconstruct_path(child)
+                    total_energy = 0
+                    p = child
+                    while p.parent:
+                        if p.action[0] == 'move':
+                            total_energy += p.action[2]
+                        p = p.parent
+                    return {
+                        'found': True,
+                        'path': path,
+                        'total_cost': total_energy,
+                        'nodes_expanded': nodes_expanded,
+                        'max_frontier': max_frontier,
+                        'runtime': runtime,
+                        'expansion_log': expansion_log
+                    }
+                reached.add(child_state)
+                frontier.append(child)
+        if len(frontier) > max_frontier:
+            max_frontier = len(frontier)
+
+    return {'found': False}
+  
 # ===== Run and display results =====
 def print_result(name, res):
     print(f"\n--- {name} ---")
@@ -119,5 +170,7 @@ def print_result(name, res):
         print("No solution found.")
 
 ucs_result = UCSNode.uniform_cost_search(INITIAL)
+bfs_result = breadth_first_search(INITIAL)
 
 print_result("Uniform Cost Search", ucs_result)
+print_result("Breadth-First Search", bfs_result)
