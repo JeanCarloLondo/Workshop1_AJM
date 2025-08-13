@@ -104,3 +104,20 @@ class UCSNode:
             max_frontier = len(frontier)
 
       return {'found': False}
+  
+# ===== Run and display results =====
+def print_result(name, res):
+    print(f"\n--- {name} ---")
+    if res['found']:
+        print("Path:", res['path'])
+        print("Total energy cost:", res['total_cost'])
+        print("Nodes expanded:", res['nodes_expanded'])
+        print("Max frontier size:", res['max_frontier'])
+        print("Runtime (s):", f"{res['runtime']:.6f}")
+        print("First expansions:", res['expansion_log'])
+    else:
+        print("No solution found.")
+
+ucs_result = UCSNode.uniform_cost_search(INITIAL)
+
+print_result("Uniform Cost Search", ucs_result)
