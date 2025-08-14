@@ -2,6 +2,8 @@ import heapq
 import time
 from collections import deque
 
+# This is our chosen primary algorithm (UCS) compared to the secondary algorithm (BFS)
+
 # ===== Problem definition =====
 graph = {
     'Center': [('A',4), ('Est1',2)],

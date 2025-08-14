@@ -1,3 +1,5 @@
+# This is our secondary algorithm (DepthFS) used to make interesting comparisons and because we love to learn!
+
 initial = 'Center'
 goal = 'Customer'
 
@@ -23,33 +25,34 @@ costs = {
 chargingStations = {'C', 'Est1'}
 batCap = 10
 
-
 routes = []
 
-maxFrontierSize = 0 #Variable para mostrar el máximo tamaño de frontera
+maxFrontierSize = 0  # Variable to track the maximum frontier size (stack depth)
 
 def dfs_paths(node, battery, path, cost, visited):
     global maxFrontierSize
 
-    # Actualizar máximo tamaño de frontera (pila activa)
+    # Update the maximum frontier size (current active stack size)
     current_frontier_size = len(path)
     maxFrontierSize = max(maxFrontierSize, current_frontier_size)
 
-    # Recargar si estamos en estación
+    # Recharge if we are at a charging station
     if node in chargingStations:
         battery = batCap
 
-    # Meta alcanzada
+    # Goal reached
     if node == goal:
         routes.append((path[:], cost))
         return
 
     for neighbor in actions[node]:
         edge_cost = costs[(node, neighbor)]
-        # Evitar ciclos
+        
+        # Avoid cycles
         if neighbor in visited:
             continue
-        # Cortar si no hay batería suficiente
+        
+        # Skip if there is not enough battery
         if battery - edge_cost < 0:
             continue
 
@@ -57,21 +60,21 @@ def dfs_paths(node, battery, path, cost, visited):
         dfs_paths(neighbor, battery - edge_cost, path + [neighbor], cost + edge_cost, visited)
         visited.remove(neighbor)
 
-# Ejecutar DFS
+# Run DFS
 dfs_paths(initial, batCap, [initial], 0, {initial})
 
-# Resultados
+# Results
 if routes:
-    print("Rutas validas encontradas:")
+    print("Valid routes found:")
     for r, c in routes:
-        print(f"Ruta: {r}, Consumo: {c}")
+        print(f"Route: {r}, Consumption: {c}")
 
-    # Escoger la de menor consumo
+    # Choose the one with the lowest consumption
     bestRoute = min(routes, key=lambda x: x[1])
-    print("\nMejor ruta encontrada:")
-    print(f"Ruta: {bestRoute[0]}, Consumo total: {bestRoute[1]}")
+    print("\nBest route found:")
+    print(f"Route: {bestRoute[0]}, Total consumption: {bestRoute[1]}")
 else:
-    print("No se encontraron rutas válidas.")
+    print("No valid routes found.")
 
-# Métricas de búsqueda
-print(f"Tamaño maximo de frontera: {maxFrontierSize}")
+# Search metrics
+print(f"Maximum frontier size: {maxFrontierSize}")
