@@ -1,4 +1,4 @@
-# This is our secondary algorithm (DepthFS) used to make interesting comparisons and because we love to learn!
+# This is our secondary algorithm (DepthFS) used to make interesting comparisons and because we love to learn!
 
 initial = 'Center'
 goal = 'Customer'
@@ -12,42 +12,41 @@ actions = {
     'Customer': ['B', 'C'],
 }
 
-maxFrontierSize = 0 # Guarda el tamaño max de la pila cuando corre
-foundPath = None  # Guarda la primera ruta que llegue a goal 
+maxFrontierSize = 0  # Stores the maximum stack size during execution
+foundPath = None     # Stores the first route that reaches the goal
 
-def dfs_puro(node, path, visited):
-#nodo actual, lista con nodos visitados en la ruta actual. 
+def dfs_pure(node, path, visited):
+    # current node, list with visited nodes in the current path
     global maxFrontierSize, foundPath
 
     currentFrontierSize = len(path)
     maxFrontierSize = max(maxFrontierSize, currentFrontierSize)
 
     if node == goal:
-        foundPath = path[:]  #copia la ruta que llegó a path en foundPath
-        return True  #Para la busqueda
+        foundPath = path[:]  # copies the route that reached the goal into foundPath
+        return True  # Stops the search
 
     for neighbor in actions[node]:
         if neighbor not in visited:
             visited.add(neighbor)
-            if dfs_puro(neighbor, path + [neighbor], visited):
-                #nuevo nodo a visitar, la ruta acutal más el nuevo nodo, 
-                return True 
+            if dfs_pure(neighbor, path + [neighbor], visited):
+                # new node to visit, the current route plus the new node
+                return True
             visited.remove(neighbor)
-            #Si NO encontró el objetivo entonces hace backtracking, quita el vecino de 
-            #visitados para que otro camino lo pueda visitar en un futuro.
-            #Evita el bloqueo de rutas alternativas, puede que si yo me meto por otro lado
-            #necesite B para pasar a otro estado que si lleve a goal.
+            # If the goal was NOT found, perform backtracking:
+            # remove the neighbor from visited so that another path
+            # can visit it in the future.
+            # This prevents blocking alternative routes — if we go
+            # another way, we might need 'B' to reach a goal state.
 
-    return False  # No hay solución bro
+    return False  # No solution found
 
-
-
-dfs_puro(initial, [initial], {initial}) #Recursividad tas tas tas
-
+# Recursion goes brrr
+dfs_pure(initial, [initial], {initial})
 
 if foundPath:
-    print("Ruta encontrada DFS puro:", foundPath)
+    print("DFS pure route found:", foundPath)
 else:
-    print("No hay ruta bro .")
+    print("No route found.")
 
-print(f"Size max de frontera: {maxFrontierSize}")
+print(f"Max frontier size: {maxFrontierSize}")
