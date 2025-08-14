@@ -1,4 +1,4 @@
-# This is our secondary algorithm (DepthFS) used to make interesting comparisons and because we love to learn!
+# This is our secondary algorithm (DepthFS) used to make interesting comparisons and because we love to learn!
 
 initial = 'Center'
 goal = 'Customer'
@@ -12,69 +12,42 @@ actions = {
     'Customer': ['B', 'C'],
 }
 
-costs = {
-    ('Center', 'A'): 4, ('A', 'Center'): 4,
-    ('Center', 'Est1'): 2, ('Est1', 'Center'): 2,
-    ('A', 'B'): 6, ('B', 'A'): 6,
-    ('A', 'C'): 3, ('C', 'A'): 3,
-    ('B', 'Customer'): 5, ('Customer', 'B'): 5,
-    ('C', 'Customer'): 2, ('Customer', 'C'): 2,
-    ('Est1', 'C'): 2, ('C', 'Est1'): 2
-}
+maxFrontierSize = 0 # Guarda el tamaño max de la pila cuando corre
+foundPath = None  # Guarda la primera ruta que llegue a goal 
 
-chargingStations = {'C', 'Est1'}
-batCap = 10
+def dfs_puro(node, path, visited):
+#nodo actual, lista con nodos visitados en la ruta actual. 
+    global maxFrontierSize, foundPath
 
-routes = []
+    currentFrontierSize = len(path)
+    maxFrontierSize = max(maxFrontierSize, currentFrontierSize)
 
-maxFrontierSize = 0  # Variable to track the maximum frontier size (stack depth)
-
-def dfs_paths(node, battery, path, cost, visited):
-    global maxFrontierSize
-
-    # Update the maximum frontier size (current active stack size)
-    current_frontier_size = len(path)
-    maxFrontierSize = max(maxFrontierSize, current_frontier_size)
-
-    # Recharge if we are at a charging station
-    if node in chargingStations:
-        battery = batCap
-
-    # Goal reached
     if node == goal:
-        routes.append((path[:], cost))
-        return
+        foundPath = path[:]  #copia la ruta que llegó a path en foundPath
+        return True  #Para la busqueda
 
     for neighbor in actions[node]:
-        edge_cost = costs[(node, neighbor)]
-        
-        # Avoid cycles
-        if neighbor in visited:
-            continue
-        
-        # Skip if there is not enough battery
-        if battery - edge_cost < 0:
-            continue
+        if neighbor not in visited:
+            visited.add(neighbor)
+            if dfs_puro(neighbor, path + [neighbor], visited):
+                #nuevo nodo a visitar, la ruta acutal más el nuevo nodo, 
+                return True 
+            visited.remove(neighbor)
+            #Si NO encontró el objetivo entonces hace backtracking, quita el vecino de 
+            #visitados para que otro camino lo pueda visitar en un futuro.
+            #Evita el bloqueo de rutas alternativas, puede que si yo me meto por otro lado
+            #necesite B para pasar a otro estado que si lleve a goal.
 
-        visited.add(neighbor)
-        dfs_paths(neighbor, battery - edge_cost, path + [neighbor], cost + edge_cost, visited)
-        visited.remove(neighbor)
+    return False  # No hay solución bro
 
-# Run DFS
-dfs_paths(initial, batCap, [initial], 0, {initial})
 
-# Results
-if routes:
-    print("Valid routes found:")
-    for r, c in routes:
-        print(f"Route: {r}, Consumption: {c}")
 
-    # Choose the one with the lowest consumption
-    bestRoute = min(routes, key=lambda x: x[1])
-    print("\nBest route found:")
-    print(f"Route: {bestRoute[0]}, Total consumption: {bestRoute[1]}")
+dfs_puro(initial, [initial], {initial}) #Recursividad tas tas tas
+
+
+if foundPath:
+    print("Ruta encontrada DFS puro:", foundPath)
 else:
-    print("No valid routes found.")
+    print("No hay ruta bro .")
 
-# Search metrics
-print(f"Maximum frontier size: {maxFrontierSize}")
+print(f"Size max de frontera: {maxFrontierSize}")
