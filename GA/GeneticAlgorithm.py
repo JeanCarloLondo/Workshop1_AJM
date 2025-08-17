@@ -249,3 +249,45 @@ def evolve(population: List[List[Operation]],
             print(f"Gen {gen:5d} | Gen-best: {gen_best_ms} | Avg: {gen_avg:.2f} | Global-best: {glob_best_ms}")
 
     return best
+
+# ---------- Main / CLI ----------
+def main():
+    parser = argparse.ArgumentParser(description="Genetic Algorithm for Job-Shop (multi-dish kitchen)")
+    parser.add_argument("--pop-size", type=int, default=40, help="Population size")
+    parser.add_argument("--generations", type=int, default=150, help="Number of generations")
+    parser.add_argument("--mutation", type=float, default=0.2, help="Swap-mutation probability")
+    parser.add_argument("--seed", type=int, default=None, help="Random seed")
+    parser.add_argument("--elitism", action="store_true", help="Carry best individual to next generation")
+    parser.add_argument("--jobs-file", type=str, default=None, help="JSON with jobs {job: [[machine, dur], ...]}")
+    parser.add_argument("--plot", "--plot-gantt", dest="plot", type=str, default=None,
+                        help="Save Gantt chart to file (requires matplotlib)")
+    parser.add_argument("--csv", type=str, default=None, help="Export schedule as CSV to this path")
+    parser.add_argument("--print-every", type=int, default=15, help="How often to print progress (generations)")
+    args = parser.parse_args()
+
+    if args.seed is not None:
+        random.seed(args.seed)
+
+    jobs = DEFAULT_JOBS if args.jobs_file is None else load_jobs_from_file(args.jobs_file)
+
+    # Build initial population ALWAYS avoiding LB individuals
+    population = create_population_avoid_lb(args.pop_size, jobs)
+
+    # Evolve
+    best_ind = evolve(population, jobs,
+                      generations=args.generations,
+                      mutation_prob=args.mutation,
+                      elitism=args.elitism,
+                      print_every=args.print_every)
+
+    # Results
+    best_schedule = build_schedule(best_ind, jobs)
+    print_schedule(best_schedule, jobs)
+
+    if args.csv:
+        export_csv(best_schedule, jobs, args.csv)
+    if args.plot:
+        plot_gantt(best_schedule, jobs, args.plot)
+
+if __name__ == "__main__":
+    main()
