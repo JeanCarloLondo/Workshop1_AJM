@@ -132,3 +132,74 @@ def mutate(ind: List[Operation], prob: float = 0.2) -> List[Operation]:
         i, j = random.sample(range(len(ind)), 2)
         ind[i], ind[j] = ind[j], ind[i]
     return ind
+    
+# ---------- Diagnostics ----------
+def population_stats(population: List[List[Operation]], jobs: Dict[str, List[Tuple[str, int]]]) -> Tuple[int, float, int]:
+    values = [-fitness(ind, jobs) for ind in population]
+    return (min(values), sum(values) / len(values), max(values))
+
+# ---------- CSV / Plot / IO ----------
+def print_schedule(schedule: Schedule, jobs: Dict[str, List[Tuple[str, int]]]) -> None:
+    print("\nBest schedule found:")
+    for (job, idx), (start, end) in sorted_schedule(schedule):
+        machine = jobs[job][idx][0]
+        print(f"{job} Op{idx + 1} on {machine}: {start} → {end}")
+    print(f"\nTotal makespan: {makespan(schedule)}")
+
+def export_csv(schedule: Schedule, jobs: Dict[str, List[Tuple[str, int]]], path: str) -> None:
+    import csv, os
+    rows = []
+    for (job, idx), (start, end) in sorted_schedule(schedule):
+        machine, duration = jobs[job][idx]
+        rows.append({
+            "job": job,
+            "op_index": idx + 1,
+            "machine": machine,
+            "duration": duration,
+            "start": start,
+            "end": end
+        })
+    os.makedirs(os.path.dirname(path), exist_ok=True) if os.path.dirname(path) else None
+    with open(path, "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
+        writer.writeheader()
+        writer.writerows(rows)
+    print(f"CSV saved to: {path}")
+
+def plot_gantt(schedule: Schedule, jobs: Dict[str, List[Tuple[str, int]]], path: str) -> None:
+    try:
+        import matplotlib.pyplot as plt
+    except Exception as e:
+        print(f"Could not import matplotlib: {e}")
+        return
+    tasks = sorted_schedule(schedule)
+    fig, ax = plt.subplots(figsize=(10, max(4, len(tasks) * 0.3)))
+    machine_bands = {}
+    for (job, idx), (start, end) in tasks:
+        machine = jobs[job][idx][0]
+        if machine not in machine_bands:
+            machine_bands[machine] = len(machine_bands)
+        band = machine_bands[machine]
+        ax.barh(y=band, width=end - start, left=start)
+        ax.text(start + (end - start) / 2, band, f"{job}-Op{idx+1}", ha="center", va="center", fontsize=8)
+    ax.set_xlabel("Time")
+    ax.set_ylabel("Machine")
+    inv_map = {v: k for k, v in machine_bands.items()}
+    ax.set_yticks(range(len(inv_map)))
+    ax.set_yticklabels([inv_map[i] for i in range(len(inv_map))])
+    ax.set_title("Gantt – Best schedule")
+    ax.grid(True, axis="x", linestyle="--", alpha=0.4)
+    fig.tight_layout()
+    import os
+    os.makedirs(os.path.dirname(path), exist_ok=True) if os.path.dirname(path) else None
+    plt.savefig(path, dpi=150)
+    plt.close(fig)
+    print(f"Gantt saved to: {path}")
+
+def load_jobs_from_file(path: str) -> Dict[str, List[Tuple[str, int]]]:
+    with open(path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+    jobs: Dict[str, List[Tuple[str, int]]] = {}
+    for job, ops in data.items():
+        jobs[job] = [(str(m), int(d)) for (m, d) in ops]
+    return jobs
