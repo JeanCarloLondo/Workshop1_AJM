@@ -203,3 +203,49 @@ def load_jobs_from_file(path: str) -> Dict[str, List[Tuple[str, int]]]:
     for job, ops in data.items():
         jobs[job] = [(str(m), int(d)) for (m, d) in ops]
     return jobs
+
+# ---------- GA loop ----------
+def evolve(population: List[List[Operation]],
+           jobs: Dict[str, List[Tuple[str, int]]],
+           generations: int = 150,
+           mutation_prob: float = 0.2,
+           elitism: bool = True,
+           print_every: int = 15) -> List[Operation]:
+    """Run the GA; returns the best individual found."""
+    # Global best from initial population (already LB-free)
+    best = max(population, key=lambda ind: fitness(ind, jobs))
+    best_ms = -fitness(best, jobs)
+
+    # Print LB & initial stats
+    lb, loads, longest_job = compute_lb(jobs)
+    pop_best, pop_avg, pop_worst = population_stats(population, jobs)
+    print(f"Gen    0 | Gen-best: {pop_best} | Avg: {pop_avg:.2f} | Global-best: {best_ms} "
+          f"(LB={lb}, loads={loads}, longest_job={longest_job})")
+
+    # Evolution
+    for gen in range(1, generations + 1):
+        new_pop: List[List[Operation]] = []
+        if elitism:
+            new_pop.append(best[:])  # keep global best
+
+        while len(new_pop) < len(population):
+            p1 = selection(population, jobs)
+            p2 = selection(population, jobs)
+            child = crossover(p1, p2)
+            child = mutate(child, mutation_prob)
+            new_pop.append(child)
+
+        population = new_pop[:len(population)]
+
+        curr_best = max(population, key=lambda ind: fitness(ind, jobs))
+        if fitness(curr_best, jobs) > fitness(best, jobs):
+            best = curr_best
+
+        gen_best_ms = -fitness(curr_best, jobs)
+        glob_best_ms = -fitness(best, jobs)
+        _, gen_avg, _ = population_stats(population, jobs)
+
+        if (gen % max(1, print_every) == 0) or gen == 1 or gen == generations:
+            print(f"Gen {gen:5d} | Gen-best: {gen_best_ms} | Avg: {gen_avg:.2f} | Global-best: {glob_best_ms}")
+
+    return best
